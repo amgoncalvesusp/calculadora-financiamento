@@ -342,30 +342,26 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    function updateCalcMode() {
-      var mode = document.querySelector('input[name="calc-mode"]:checked').value;
-      var groupPrazo = document.getElementById('group-prazo');
-      var groupParcela = document.getElementById('group-parcela');
-      var prazoInput = document.getElementById('prazo');
-      var parcelaInput = document.getElementById('parcela-desejada');
+    var prazoInput = document.getElementById('prazo');
+    var parcelaInput = document.getElementById('parcela-desejada');
 
-      if (mode === 'prazo') {
-        groupPrazo.classList.remove('hidden');
-        groupParcela.classList.add('hidden');
-        prazoInput.required = true;
-        parcelaInput.required = false;
+    prazoInput.addEventListener('input', function () {
+      if (prazoInput.value > 0) {
+        parcelaInput.value = '';
+        parcelaInput.disabled = true;
       } else {
-        groupPrazo.classList.add('hidden');
-        groupParcela.classList.remove('hidden');
-        prazoInput.required = false;
-        parcelaInput.required = true;
+        parcelaInput.disabled = false;
       }
-    }
+    });
 
-    var modeRadios = document.querySelectorAll('input[name="calc-mode"]');
-    for (var r = 0; r < modeRadios.length; r++) {
-      modeRadios[r].addEventListener('change', updateCalcMode);
-    }
+    parcelaInput.addEventListener('input', function () {
+      if (parcelaInput.value > 0) {
+        prazoInput.value = '';
+        prazoInput.disabled = true;
+      } else {
+        prazoInput.disabled = false;
+      }
+    });
 
     var form = document.getElementById('calc-form');
 
@@ -380,7 +376,6 @@
       var entrada = getVal('entrada');
       var taxa = getVal('taxa-juros') / 100;
       var periodo = document.querySelector('input[name="periodo-taxa"]:checked').value;
-      var calcMode = document.querySelector('input[name="calc-mode"]:checked').value;
       var sistema = document.getElementById('sistema').value;
       var renda = getVal('renda-mensal');
 
@@ -398,16 +393,14 @@
       var monthlyRate = periodo === 'annual' ? taxa / 12 : taxa;
 
       var meses;
+      var calcMode;
+      var prazoVal = getVal('prazo');
+      var parcelaVal = getVal('parcela-desejada');
 
-      if (calcMode === 'prazo') {
-        meses = parseInt(prazoInput.value, 10);
-        if (meses < 1 || isNaN(meses)) { showError('Informe um prazo válido (mínimo 1 mês).'); return; }
-      } else {
-        var parcelaDesejada = getVal('parcela-desejada');
-        if (parcelaDesejada <= 0) { showError('Informe o valor da parcela que você pode pagar.'); return; }
-
-        var nPrice = calcPriceN(principal, monthlyRate, parcelaDesejada);
-        var nSAC = calcSACN(principal, monthlyRate, parcelaDesejada);
+      if (parcelaVal > 0) {
+        calcMode = 'parcela';
+        var nPrice = calcPriceN(principal, monthlyRate, parcelaVal);
+        var nSAC = calcSACN(principal, monthlyRate, parcelaVal);
 
         if (sistema === 'price' || sistema === 'comparar') {
           if (nPrice < 0 || !isFinite(nPrice)) {
@@ -431,6 +424,12 @@
         }
 
         if (meses > 420) { showError('O prazo necessário ultrapassa 35 anos (420 meses). Aumente a parcela ou a entrada.'); return; }
+      } else if (prazoVal > 0) {
+        calcMode = 'prazo';
+        meses = prazoVal;
+      } else {
+        showError('Informe o prazo (meses) OU a parcela que pode pagar.');
+        return;
       }
 
       var resultPrice = null;

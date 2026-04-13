@@ -159,6 +159,13 @@ header .subtitle {
   box-shadow: 0 0 0 3px var(--primary-light);
 }
 
+.form-group input[type="number"]:disabled {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .input-row {
   display: flex;
   gap: 8px;
