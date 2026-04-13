@@ -344,24 +344,27 @@
   document.addEventListener('DOMContentLoaded', function () {
     var prazoInput = document.getElementById('prazo');
     var parcelaInput = document.getElementById('parcela-desejada');
+    var btnPrazo = document.getElementById('btn-prazo');
+    var btnParcela = document.getElementById('btn-parcela');
 
-    prazoInput.addEventListener('input', function () {
-      if (prazoInput.value > 0) {
-        parcelaInput.value = '';
-        parcelaInput.disabled = true;
-      } else {
-        parcelaInput.disabled = false;
-      }
-    });
-
-    parcelaInput.addEventListener('input', function () {
-      if (parcelaInput.value > 0) {
-        prazoInput.value = '';
-        prazoInput.disabled = true;
-      } else {
+    function setCalcMode(mode) {
+      if (mode === 'prazo') {
+        btnPrazo.classList.add('active');
+        btnParcela.classList.remove('active');
         prazoInput.disabled = false;
+        parcelaInput.disabled = true;
+        parcelaInput.value = '';
+      } else {
+        btnParcela.classList.add('active');
+        btnPrazo.classList.remove('active');
+        parcelaInput.disabled = false;
+        prazoInput.disabled = true;
+        prazoInput.value = '';
       }
-    });
+    }
+
+    btnPrazo.addEventListener('click', function () { setCalcMode('prazo'); });
+    btnParcela.addEventListener('click', function () { setCalcMode('parcela'); });
 
     var form = document.getElementById('calc-form');
 
