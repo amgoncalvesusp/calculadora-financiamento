@@ -63,6 +63,20 @@
     return { installments: installments, totalPaid: P + totalInterest, totalInterest: totalInterest };
   }
 
+  function calcPriceN(P, i, pmt) {
+    if (i === 0) return Math.ceil(P / pmt);
+    var firstInterest = P * i;
+    if (pmt <= firstInterest) return -1;
+    return Math.log(pmt / (pmt - P * i)) / Math.log(1 + i);
+  }
+
+  function calcSACN(P, i, firstPayment) {
+    var firstInterest = P * i;
+    if (firstPayment <= firstInterest) return -1;
+    var amortization = firstPayment - firstInterest;
+    return P / amortization;
+  }
+
   function calcCET(P, n, payments, mip, dfi, adm, openingFee) {
     var netP = P - openingFee;
     if (netP <= 0) return { monthly: 0, annual: 0 };
@@ -99,6 +113,32 @@
     };
   }
 
+  function analyzeIncome(payment, renda) {
+    if (!renda || renda <= 0) return null;
+    var perc = payment / renda * 100;
+    var level, label, message;
+
+    if (perc <= 20) {
+      level = 'safe';
+      label = 'Comprometimento baixo';
+      message = 'A parcela cabe bem no seu orçamento. Está dentro da faixa recomendada.';
+    } else if (perc <= 30) {
+      level = 'attention';
+      label = 'Comprometimento moderado';
+      message = 'A parcela está no limite recomendado. Cuidado para não ficar apertado se surgirem despesas extras.';
+    } else if (perc <= 50) {
+      level = 'danger';
+      label = 'Comprometimento alto';
+      message = 'Mais de 30% da sua renda vai para a parcela. Isso pode comprometer seu padrão de vida e deixar pouco espaço para imprevistos. Considere uma entrada maior ou um prazo diferente.';
+    } else {
+      level = 'critical';
+      label = 'Comprometimento crítico';
+      message = 'Recomendamos NÃO fazer este financiamento. Metade ou mais da sua renda iria para a parcela, o que é insustentável. Aumente a entrada, escolha um bem mais barato ou busque alternativas.';
+    }
+
+    return { percent: perc, level: level, label: label, message: message };
+  }
+
   function fmtCurrency(v) {
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
@@ -108,6 +148,10 @@
       minimumFractionDigits: 2,
       maximumFractionDigits: 4
     }) + '%';
+  }
+
+  function fmtPercentSimple(v) {
+    return v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
   }
 
   function getVal(id) {
@@ -146,10 +190,23 @@
       '</div>';
   }
 
+  function incomeAlert(analysis) {
+    if (!analysis) return '';
+    var cls = 'alert-' + analysis.level;
+    return '<div class="income-alert ' + cls + '">' +
+      '<div class="alert-header">' +
+      '<span class="alert-label">' + analysis.label + '</span>' +
+      '<span class="alert-percent">' + fmtPercentSimple(analysis.percent) + ' da renda</span>' +
+      '</div>' +
+      '<p class="alert-message">' + analysis.message + '</p>' +
+      '</div>';
+  }
+
   function renderResults(data) {
     var html = '';
     var sistema = data.sistema;
     var isComp = sistema === 'comparar';
+    var renda = data.renda;
 
     if (isComp) {
       var rSAC = data.resultSAC;
@@ -160,6 +217,10 @@
       var sacCheaper = rSAC.totalPaid <= rPrice.totalPaid;
 
       html += '<h2>Comparação SAC vs Price</h2>';
+      if (renda > 0) {
+        var analysisComp = analyzeIncome(rSAC.installments[0].payment, renda);
+        html += incomeAlert(analysisComp);
+      }
       html += '<div class="comparison">';
       html += '<div class="comp-col' + (sacCheaper ? ' cheaper' : '') + '">';
       html += '<h3>SAC <small>parcelas decrescentes</small></h3>';
@@ -171,6 +232,9 @@
       html += compMetric('Última Parcela', fmtCurrency(rSAC.installments[rSAC.installments.length - 1].payment), 'Valor da última prestação — no SAC é sempre menor que a primeira');
       html += compMetric('CET Mensal', fmtPercent(cSAC.monthly), 'Custo Efetivo Total mensal — taxa real incluindo juros + seguros + taxas');
       html += compMetric('CET Anual', fmtPercent(cSAC.annual), 'Custo Efetivo Total anual — é a CET mensal convertida para o ano');
+      if (renda > 0) {
+        html += compMetric('Compromet. Renda', fmtPercentSimple(rSAC.installments[0].payment / renda * 100), 'Percentual da sua renda comprometido com a 1ª parcela');
+      }
       html += '</div>';
       if (sacCheaper) {
         html += '<div class="economy-badge">Mais econômico: economize ' + fmtCurrency(diffTotal) + '</div>';
@@ -186,6 +250,9 @@
       html += compMetric('Última Parcela', fmtCurrency(rPrice.installments[rPrice.installments.length - 1].payment), 'No Price, todas as parcelas são iguais');
       html += compMetric('CET Mensal', fmtPercent(cPrice.monthly), 'Custo Efetivo Total mensal — taxa real incluindo juros + seguros + taxas');
       html += compMetric('CET Anual', fmtPercent(cPrice.annual), 'Custo Efetivo Total anual — é a CET mensal convertida para o ano');
+      if (renda > 0) {
+        html += compMetric('Compromet. Renda', fmtPercentSimple(rPrice.installments[0].payment / renda * 100), 'Percentual da sua renda comprometido com a parcela');
+      }
       html += '</div>';
       if (!sacCheaper) {
         html += '<div class="economy-badge">Mais econômico: economize ' + fmtCurrency(diffTotal) + '</div>';
@@ -205,6 +272,12 @@
       var sysLabel = sistema === 'price' ? 'Price (parcelas fixas)' : 'SAC (parcelas decrescentes)';
 
       html += '<h2>Resultado — ' + sysLabel + '</h2>';
+
+      if (renda > 0) {
+        var analysisSingle = analyzeIncome(result.installments[0].payment, renda);
+        html += incomeAlert(analysisSingle);
+      }
+
       html += '<div class="summary-cards">';
       html += card('Valor Financiado', fmtCurrency(data.principal), '', 'Valor que o banco empresta para você (valor do bem menos a entrada)');
       html += card('Custo Total', fmtCurrency(data.entrada + result.totalPaid), '', 'Tudo que você vai pagar: entrada + todas as parcelas');
@@ -213,6 +286,11 @@
       html += card('Última Parcela', fmtCurrency(result.installments[result.installments.length - 1].payment), '', 'Valor da última prestação');
       html += card('CET Mensal', fmtPercent(cet.monthly), '', 'Custo Efetivo Total mensal — taxa real incluindo juros + seguros + taxas');
       html += card('CET Anual', fmtPercent(cet.annual), 'highlight-warning', 'Custo Efetivo Total anual — é a CET mensal convertida para o ano');
+      if (renda > 0) {
+        html += card('Compromet. Renda', fmtPercentSimple(result.installments[0].payment / renda * 100),
+          result.installments[0].payment / renda > 0.3 ? 'highlight-danger' : 'highlight-success',
+          'Percentual da sua renda que vai para a parcela');
+      }
       html += '</div>';
 
       html += '<h3>Tabela de Amortização</h3>';
@@ -244,6 +322,28 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    var modeRadios = document.querySelectorAll('input[name="calc-mode"]');
+    var groupPrazo = document.getElementById('group-prazo');
+    var groupParcela = document.getElementById('group-parcela');
+    var prazoInput = document.getElementById('prazo');
+    var parcelaInput = document.getElementById('parcela-desejada');
+
+    for (var r = 0; r < modeRadios.length; r++) {
+      modeRadios[r].addEventListener('change', function () {
+        if (this.value === 'prazo') {
+          groupPrazo.classList.remove('hidden');
+          groupParcela.classList.add('hidden');
+          prazoInput.required = true;
+          parcelaInput.required = false;
+        } else {
+          groupPrazo.classList.add('hidden');
+          groupParcela.classList.remove('hidden');
+          prazoInput.required = false;
+          parcelaInput.required = true;
+        }
+      });
+    }
+
     var form = document.getElementById('calc-form');
 
     form.addEventListener('submit', function (e) {
@@ -257,8 +357,9 @@
       var entrada = getVal('entrada');
       var taxa = getVal('taxa-juros') / 100;
       var periodo = document.querySelector('input[name="periodo-taxa"]:checked').value;
-      var meses = parseInt(document.getElementById('prazo').value, 10);
+      var calcMode = document.querySelector('input[name="calc-mode"]:checked').value;
       var sistema = document.getElementById('sistema').value;
+      var renda = getVal('renda-mensal');
 
       var seguroMIP = getVal('seguro-mip');
       var seguroDFI = getVal('seguro-dfi');
@@ -269,10 +370,45 @@
       if (entrada < 0) { showError('A entrada não pode ser negativa.'); return; }
       if (entrada >= valorVista) { showError('A entrada deve ser menor que o valor do bem.'); return; }
       if (taxa < 0) { showError('A taxa de juros não pode ser negativa.'); return; }
-      if (meses < 1 || isNaN(meses)) { showError('Informe um prazo válido (mínimo 1 mês).'); return; }
 
       var principal = valorVista - entrada;
       var monthlyRate = periodo === 'annual' ? taxa / 12 : taxa;
+
+      var meses;
+
+      if (calcMode === 'prazo') {
+        meses = parseInt(prazoInput.value, 10);
+        if (meses < 1 || isNaN(meses)) { showError('Informe um prazo válido (mínimo 1 mês).'); return; }
+      } else {
+        var parcelaDesejada = getVal('parcela-desejada');
+        if (parcelaDesejada <= 0) { showError('Informe o valor da parcela que você pode pagar.'); return; }
+
+        var nPrice = calcPriceN(principal, monthlyRate, parcelaDesejada);
+        var nSAC = calcSACN(principal, monthlyRate, parcelaDesejada);
+
+        if (sistema === 'price' || sistema === 'comparar') {
+          if (nPrice < 0 || !isFinite(nPrice)) {
+            showError('A parcela informada é menor que os juros do primeiro mês (' + fmtCurrency(principal * monthlyRate) + '). Aumente a parcela ou a entrada.');
+            return;
+          }
+        }
+        if (sistema === 'sac' || sistema === 'comparar') {
+          if (nSAC < 0 || !isFinite(nSAC)) {
+            showError('A parcela informada é menor que os juros do primeiro mês (' + fmtCurrency(principal * monthlyRate) + '). Aumente a parcela ou a entrada.');
+            return;
+          }
+        }
+
+        if (sistema === 'comparar') {
+          meses = Math.ceil(Math.max(nPrice, nSAC));
+        } else if (sistema === 'price') {
+          meses = Math.ceil(nPrice);
+        } else {
+          meses = Math.ceil(nSAC);
+        }
+
+        if (meses > 420) { showError('O prazo necessário ultrapassa 35 anos (420 meses). Aumente a parcela ou a entrada.'); return; }
+      }
 
       var resultPrice = null;
       var resultSAC = null;
@@ -308,7 +444,8 @@
         resultPrice: resultPrice,
         resultSAC: resultSAC,
         cetPrice: cetPrice,
-        cetSAC: cetSAC
+        cetSAC: cetSAC,
+        renda: renda
       });
     });
 

@@ -8,6 +8,10 @@
   --danger-light: #fee2e2;
   --warning: #d97706;
   --warning-light: #fef3c7;
+  --success: #059669;
+  --success-light: #d1fae5;
+  --info: #0284c7;
+  --info-light: #e0f2fe;;
   --bg: #f1f5f9;
   --surface: #ffffff;
   --text: #1e293b;
@@ -310,8 +314,14 @@ header .subtitle {
 }
 
 .card.highlight-danger .card-label,
-.card.highlight-warning .card-label {
+.card.highlight-warning .card-label,
+.card.highlight-success .card-label {
   color: var(--text);
+}
+
+.card.highlight-success {
+  border-color: var(--success);
+  background: var(--success-light);
 }
 
 .card-value {
@@ -704,6 +714,71 @@ footer {
   font-size: 0.9375rem;
   line-height: 1.65;
   color: var(--text);
+}
+
+.mode-toggle {
+  width: 100%;
+}
+
+.income-alert {
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  border-left: 4px solid;
+}
+
+.income-alert.alert-safe {
+  background: var(--success-light);
+  border-color: var(--success);
+}
+
+.income-alert.alert-attention {
+  background: var(--warning-light);
+  border-color: var(--warning);
+}
+
+.income-alert.alert-danger {
+  background: var(--danger-light);
+  border-color: var(--danger);
+}
+
+.income-alert.alert-critical {
+  background: var(--danger-light);
+  border-color: #7f1d1d;
+  background: linear-gradient(135deg, var(--danger-light), #fecaca);
+}
+
+.alert-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.alert-label {
+  font-weight: 700;
+  font-size: 0.9375rem;
+}
+
+.alert-safe .alert-label { color: #065f46; }
+.alert-attention .alert-label { color: #92400e; }
+.alert-danger .alert-label { color: #991b1b; }
+.alert-critical .alert-label { color: #7f1d1d; }
+
+.alert-percent {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.alert-safe .alert-percent { color: var(--success); }
+.alert-attention .alert-percent { color: var(--warning); }
+.alert-danger .alert-percent { color: var(--danger); }
+.alert-critical .alert-percent { color: #7f1d1d; }
+
+.alert-message {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
