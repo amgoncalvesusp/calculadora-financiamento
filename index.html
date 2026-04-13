@@ -221,12 +221,12 @@
 
               <div class="form-group">
                 <label>Como quer calcular?</label>
-                <span class="hint">Informe o prazo e veja a parcela, ou informe a parcela e veja o prazo</span>
+                <span class="hint">Informe o prazo e veja a parcela, ou informe a parcela e descubra o prazo e os juros</span>
                 <div class="toggle-group mode-toggle">
                   <input type="radio" name="calc-mode" id="mode-prazo" value="prazo" checked>
-                  <label for="mode-prazo" class="toggle-label">Por prazo</label>
+                  <label for="mode-prazo" class="toggle-label">Prazo → Parcela</label>
                   <input type="radio" name="calc-mode" id="mode-parcela" value="parcela">
-                  <label for="mode-parcela" class="toggle-label">Por parcela</label>
+                  <label for="mode-parcela" class="toggle-label">Parcela → Prazo</label>
                 </div>
               </div>
 
@@ -238,13 +238,13 @@
 
               <div class="form-group hidden" id="group-parcela">
                 <label for="parcela-desejada">Parcela que você pode pagar (R$)</label>
-                <span class="hint">Informe o valor mensal que cabe no seu bolso e veja quanto tempo leva e quanto de juros paga</span>
+                <span class="hint">Informe o valor mensal que cabe no seu bolso e descubra o prazo necessário e quanto vai pagar de juros</span>
                 <input type="number" id="parcela-desejada" min="0" step="0.01" placeholder="Ex: 2000">
               </div>
 
               <div class="form-group">
-                <label for="renda-mensal">Sua renda mensal (R$)</label>
-                <span class="hint">Opcional. Usado para calcular o comprometimento da renda e alertar se a parcela está pesada demais</span>
+                <label for="renda-mensal">Sua renda mensal (R$) <span class="optional-tag">recomendado</span></label>
+                <span class="hint hint-important">Informe para descobrir se a parcela compromete muito seu orçamento. Acima de 30% da renda, alertamos sobre o risco; acima de 50%, recomendamos NÃO fazer o financiamento</span>
                 <input type="number" id="renda-mensal" min="0" step="0.01" placeholder="Ex: 5000">
               </div>
             </div>

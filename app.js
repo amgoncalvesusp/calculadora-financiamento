@@ -220,6 +220,8 @@
       if (renda > 0) {
         var analysisComp = analyzeIncome(rSAC.installments[0].payment, renda);
         html += incomeAlert(analysisComp);
+      } else {
+        html += '<div class="income-alert alert-attention"><div class="alert-header"><span class="alert-label">Informe sua renda mensal</span></div><p class="alert-message">Preencha o campo "Sua renda mensal" no formulário para descobrir se a parcela compromete muito seu orçamento. Acima de 30% da renda, alertamos sobre o risco.</p></div>';
       }
       html += '<div class="comparison">';
       html += '<div class="comp-col' + (sacCheaper ? ' cheaper' : '') + '">';
@@ -260,12 +262,15 @@
       html += '</div>';
       html += '</div>';
 
+      html += '<details class="amortization-details">';
+      html += '<summary>Tabela de Amortização — clique para expandir</summary>';
       html += '<div class="table-tabs">';
       html += '<button class="tab active" data-tab="sac">Tabela SAC</button>';
       html += '<button class="tab" data-tab="price">Tabela Price</button>';
       html += '</div>';
       html += '<div class="table-content" id="table-sac">' + generateTable(rSAC.installments) + '</div>';
       html += '<div class="table-content hidden" id="table-price">' + generateTable(rPrice.installments) + '</div>';
+      html += '</details>';
     } else {
       var result = sistema === 'price' ? data.resultPrice : data.resultSAC;
       var cet = sistema === 'price' ? data.cetPrice : data.cetSAC;
@@ -276,6 +281,8 @@
       if (renda > 0) {
         var analysisSingle = analyzeIncome(result.installments[0].payment, renda);
         html += incomeAlert(analysisSingle);
+      } else {
+        html += '<div class="income-alert alert-attention"><div class="alert-header"><span class="alert-label">Informe sua renda mensal</span></div><p class="alert-message">Preencha o campo "Sua renda mensal" no formulário para descobrir se a parcela compromete muito seu orçamento. Acima de 30% da renda, alertamos sobre o risco.</p></div>';
       }
 
       html += '<div class="summary-cards">';
@@ -293,8 +300,10 @@
       }
       html += '</div>';
 
-      html += '<h3>Tabela de Amortização</h3>';
+      html += '<details class="amortization-details">';
+      html += '<summary>Tabela de Amortização — clique para expandir</summary>';
       html += '<div class="table-scroll">' + generateTable(result.installments) + '</div>';
+      html += '</details>';
     }
 
     html += '<p class="disclaimer">Esta simulação é apenas para fins educacionais. Consulte sempre as condições reais do seu banco ou financeira.</p>';

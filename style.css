@@ -122,6 +122,24 @@ header .subtitle {
   line-height: 1.35;
 }
 
+.form-group .hint-important {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.optional-tag {
+  display: inline-block;
+  background: var(--warning);
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .form-group input[type="number"],
 .form-group select {
   height: 40px;
@@ -175,6 +193,11 @@ header .subtitle {
   transition: background 0.15s, color 0.15s;
   white-space: nowrap;
   border-right: 1px solid var(--border);
+}
+
+.mode-toggle .toggle-label {
+  padding: 0 12px;
+  font-size: 0.75rem;
 }
 
 .toggle-label:last-of-type {
@@ -779,6 +802,53 @@ footer {
   font-size: 0.875rem;
   line-height: 1.5;
   margin: 0;
+}
+
+.amortization-details {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #f8fafc;
+}
+
+.amortization-details summary {
+  cursor: pointer;
+  padding: 12px 14px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--primary-dark);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.amortization-details summary::after {
+  content: "Expandir";
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.amortization-details[open] summary::after {
+  content: "Recolher";
+}
+
+.amortization-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.amortization-details .table-scroll,
+.amortization-details .table-content {
+  padding: 0 4px 8px;
+}
+
+.amortization-details .table-tabs {
+  margin: 0 8px;
 }
 
 @media (max-width: 768px) {
