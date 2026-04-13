@@ -193,8 +193,15 @@
   function incomeAlert(analysis) {
     if (!analysis) return '';
     var cls = 'alert-' + analysis.level;
+    var icon = '';
+    if (analysis.level === 'safe') icon = '\u2713 SEGURO';
+    else if (analysis.level === 'attention') icon = '\u26A0 ATEN\u00C7\u00C3O';
+    else if (analysis.level === 'danger') icon = '\u2716 PERIGO';
+    else if (analysis.level === 'critical') icon = '\u2716 N\u00C3O RECOMENDADO';
+
     return '<div class="income-alert ' + cls + '">' +
       '<div class="alert-header">' +
+      '<span class="alert-icon">' + icon + '</span>' +
       '<span class="alert-label">' + analysis.label + '</span>' +
       '<span class="alert-percent">' + fmtPercentSimple(analysis.percent) + ' da renda</span>' +
       '</div>' +
@@ -262,8 +269,9 @@
       html += '</div>';
       html += '</div>';
 
+      html += '<div class="amortization-section">';
       html += '<details class="amortization-details">';
-      html += '<summary>Tabela de Amortização — clique para expandir</summary>';
+      html += '<summary>Tabela de Amortiza\u00E7\u00E3o — clique para expandir</summary>';
       html += '<div class="table-tabs">';
       html += '<button class="tab active" data-tab="sac">Tabela SAC</button>';
       html += '<button class="tab" data-tab="price">Tabela Price</button>';
@@ -271,6 +279,7 @@
       html += '<div class="table-content" id="table-sac">' + generateTable(rSAC.installments) + '</div>';
       html += '<div class="table-content hidden" id="table-price">' + generateTable(rPrice.installments) + '</div>';
       html += '</details>';
+      html += '</div>';
     } else {
       var result = sistema === 'price' ? data.resultPrice : data.resultSAC;
       var cet = sistema === 'price' ? data.cetPrice : data.cetSAC;
@@ -300,10 +309,12 @@
       }
       html += '</div>';
 
+      html += '<div class="amortization-section">';
       html += '<details class="amortization-details">';
-      html += '<summary>Tabela de Amortização — clique para expandir</summary>';
+      html += '<summary>Tabela de Amortiza\u00E7\u00E3o — clique para expandir</summary>';
       html += '<div class="table-scroll">' + generateTable(result.installments) + '</div>';
       html += '</details>';
+      html += '</div>';
     }
 
     html += '<p class="disclaimer">Esta simulação é apenas para fins educacionais. Consulte sempre as condições reais do seu banco ou financeira.</p>';
@@ -331,26 +342,29 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-    var modeRadios = document.querySelectorAll('input[name="calc-mode"]');
-    var groupPrazo = document.getElementById('group-prazo');
-    var groupParcela = document.getElementById('group-parcela');
-    var prazoInput = document.getElementById('prazo');
-    var parcelaInput = document.getElementById('parcela-desejada');
+    function updateCalcMode() {
+      var mode = document.querySelector('input[name="calc-mode"]:checked').value;
+      var groupPrazo = document.getElementById('group-prazo');
+      var groupParcela = document.getElementById('group-parcela');
+      var prazoInput = document.getElementById('prazo');
+      var parcelaInput = document.getElementById('parcela-desejada');
 
+      if (mode === 'prazo') {
+        groupPrazo.classList.remove('hidden');
+        groupParcela.classList.add('hidden');
+        prazoInput.required = true;
+        parcelaInput.required = false;
+      } else {
+        groupPrazo.classList.add('hidden');
+        groupParcela.classList.remove('hidden');
+        prazoInput.required = false;
+        parcelaInput.required = true;
+      }
+    }
+
+    var modeRadios = document.querySelectorAll('input[name="calc-mode"]');
     for (var r = 0; r < modeRadios.length; r++) {
-      modeRadios[r].addEventListener('change', function () {
-        if (this.value === 'prazo') {
-          groupPrazo.classList.remove('hidden');
-          groupParcela.classList.add('hidden');
-          prazoInput.required = true;
-          parcelaInput.required = false;
-        } else {
-          groupPrazo.classList.add('hidden');
-          groupParcela.classList.remove('hidden');
-          prazoInput.required = false;
-          parcelaInput.required = true;
-        }
-      });
+      modeRadios[r].addEventListener('change', updateCalcMode);
     }
 
     var form = document.getElementById('calc-form');

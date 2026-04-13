@@ -776,7 +776,23 @@ footer {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
+
+.alert-icon {
+  font-weight: 700;
+  font-size: 0.8125rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.alert-safe .alert-icon { background: #065f46; color: #fff; }
+.alert-attention .alert-icon { background: #92400e; color: #fff; }
+.alert-danger .alert-icon { background: #991b1b; color: #fff; }
+.alert-critical .alert-icon { background: #7f1d1d; color: #fff; }
 
 .alert-label {
   font-weight: 700;
@@ -805,7 +821,7 @@ footer {
 }
 
 .amortization-details {
-  margin-top: 20px;
+  margin-top: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: #f8fafc;
@@ -825,7 +841,7 @@ footer {
 }
 
 .amortization-details summary::after {
-  content: "Expandir";
+  content: "Expandir \u25BC";
   font-size: 0.75rem;
   font-weight: 400;
   color: var(--text-muted);
@@ -835,20 +851,34 @@ footer {
 }
 
 .amortization-details[open] summary::after {
-  content: "Recolher";
+  content: "Recolher \u25B2";
 }
 
 .amortization-details summary::-webkit-details-marker {
   display: none;
 }
 
-.amortization-details .table-scroll,
-.amortization-details .table-content {
-  padding: 0 4px 8px;
+.amortization-section {
+  margin-top: 16px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 0;
 }
 
-.amortization-details .table-tabs {
-  margin: 0 8px;
+.amortization-section .amortization-details {
+  margin-top: 0;
+  border: none;
+  background: transparent;
+}
+
+.amortization-section .table-scroll,
+.amortization-section .table-content {
+  padding: 8px;
+}
+
+.amortization-section .table-tabs {
+  margin: 0 12px;
 }
 
 @media (max-width: 768px) {
