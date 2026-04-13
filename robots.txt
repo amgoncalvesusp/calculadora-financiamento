@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://calculadoradefinanciamento.netlify.app/sitemap.xml
