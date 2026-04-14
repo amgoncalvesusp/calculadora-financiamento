@@ -116,27 +116,53 @@
   function analyzeIncome(payment, renda) {
     if (!renda || renda <= 0) return null;
     var perc = payment / renda * 100;
-    var level, label, message;
+    var level, label, message, recommendation;
 
     if (perc <= 20) {
       level = 'safe';
       label = 'Comprometimento baixo';
       message = 'A parcela cabe bem no seu orçamento. Está dentro da faixa recomendada.';
+      recommendation = null;
     } else if (perc <= 30) {
       level = 'attention';
       label = 'Comprometimento moderado';
       message = 'A parcela está no limite recomendado. Cuidado para não ficar apertado se surgirem despesas extras.';
+      recommendation = null;
     } else if (perc <= 50) {
       level = 'danger';
-      label = 'Comprometimento alto';
-      message = 'Mais de 30% da sua renda vai para a parcela. Isso pode comprometer seu padrão de vida e deixar pouco espaço para imprevistos. Considere uma entrada maior ou um prazo diferente.';
+      label = 'ATENÇÃO: parcela compromete muito sua renda';
+      message = '<strong>Mais de 30% da sua renda</strong> vai para a parcela. Isso pode comprometer seu padrão de vida e deixar pouco espaço para imprevistos como consertos, remédios ou emergências.';
+      recommendation = {
+        title: 'Recomendamos repensar este financiamento',
+        items: [
+          'Aumente a entrada para reduzir o valor financiado',
+          'Considere um bem mais barato',
+          'Aumente o prazo para reduzir a parcela (mas com cuidado: juros totais serão maiores)',
+          'Avalie se sua renda é estável o suficiente para manter esse compromisso'
+        ]
+      };
     } else {
       level = 'critical';
-      label = 'Comprometimento crítico';
-      message = 'Recomendamos NÃO fazer este financiamento. Metade ou mais da sua renda iria para a parcela, o que é insustentável. Aumente a entrada, escolha um bem mais barato ou busque alternativas.';
+      label = 'NÃO RECOMENDAMOS ESTE FINANCIAMENTO';
+      message = '<strong>Mais da metade da sua renda</strong> iria para a parcela. Isso é <strong>insustentável</strong> e coloca sua saúde financeira em risco sério — um imprevisto simples pode te levar à inadimplência.';
+      recommendation = {
+        title: 'O que fazer ao invés disso',
+        items: [
+          'Aumente significativamente a entrada (guarde mais antes de comprar)',
+          'Escolha um bem mais barato que caiba no seu orçamento',
+          'Busque alternativas: consórcio, aluguel, compra à vista parcelada',
+          'Espere: juntar reserva de emergência antes é mais seguro que se endividar agora'
+        ]
+      };
     }
 
-    return { percent: perc, level: level, label: label, message: message };
+    return {
+      percent: perc,
+      level: level,
+      label: label,
+      message: message,
+      recommendation: recommendation
+    };
   }
 
   function fmtCurrency(v) {
@@ -196,8 +222,21 @@
     var icon = '';
     if (analysis.level === 'safe') icon = '\u2713 SEGURO';
     else if (analysis.level === 'attention') icon = '\u26A0 ATEN\u00C7\u00C3O';
-    else if (analysis.level === 'danger') icon = '\u2716 PERIGO';
-    else if (analysis.level === 'critical') icon = '\u2716 N\u00C3O RECOMENDADO';
+    else if (analysis.level === 'danger') icon = '\u26A0 ALTO RISCO';
+    else if (analysis.level === 'critical') icon = '\u2718 N\u00C3O FA\u00C7A';
+
+    var recommendationHtml = '';
+    if (analysis.recommendation) {
+      var itemsHtml = '';
+      for (var i = 0; i < analysis.recommendation.items.length; i++) {
+        itemsHtml += '<li>' + analysis.recommendation.items[i] + '</li>';
+      }
+      recommendationHtml =
+        '<div class="alert-recommendation">' +
+        '<span class="alert-recommendation-title">' + analysis.recommendation.title + '</span>' +
+        '<ul>' + itemsHtml + '</ul>' +
+        '</div>';
+    }
 
     return '<div class="income-alert ' + cls + '">' +
       '<div class="alert-header">' +
@@ -206,6 +245,7 @@
       '<span class="alert-percent">' + fmtPercentSimple(analysis.percent) + ' da renda</span>' +
       '</div>' +
       '<p class="alert-message">' + analysis.message + '</p>' +
+      recommendationHtml +
       '</div>';
   }
 
@@ -235,6 +275,7 @@
       html += '<h3>SAC <small>parcelas decrescentes</small></h3>';
       html += '<div class="comp-metrics">';
       html += compMetric('Valor Financiado', fmtCurrency(data.principal), 'Valor que o banco empresta para você (valor do bem menos a entrada)');
+      html += compMetric('Prazo', data.mesesSAC + ' meses', 'Número de meses para quitar o financiamento');
       html += compMetric('Custo Total', fmtCurrency(data.entrada + rSAC.totalPaid), 'Tudo que você vai pagar: entrada + todas as parcelas');
       html += compMetric('Total de Juros', fmtCurrency(rSAC.totalInterest), 'Quanto você paga a mais além do valor financiado');
       html += compMetric('1ª Parcela', fmtCurrency(rSAC.installments[0].payment), 'Valor da primeira prestação mensal');
@@ -253,6 +294,7 @@
       html += '<h3>Price <small>parcelas fixas</small></h3>';
       html += '<div class="comp-metrics">';
       html += compMetric('Valor Financiado', fmtCurrency(data.principal), 'Valor que o banco empresta para você (valor do bem menos a entrada)');
+      html += compMetric('Prazo', data.mesesPrice + ' meses', 'Número de meses para quitar o financiamento');
       html += compMetric('Custo Total', fmtCurrency(data.entrada + rPrice.totalPaid), 'Tudo que você vai pagar: entrada + todas as parcelas');
       html += compMetric('Total de Juros', fmtCurrency(rPrice.totalInterest), 'Quanto você paga a mais além do valor financiado');
       html += compMetric('1ª Parcela', fmtCurrency(rPrice.installments[0].payment), 'Valor da primeira prestação mensal');
@@ -271,7 +313,7 @@
 
       html += '<div class="amortization-section">';
       html += '<details class="amortization-details">';
-      html += '<summary>Tabela de Amortiza\u00E7\u00E3o — clique para expandir</summary>';
+      html += '<summary><span>Tabela de Amortiza\u00E7\u00E3o</span></summary>';
       html += '<div class="table-tabs">';
       html += '<button class="tab active" data-tab="sac">Tabela SAC</button>';
       html += '<button class="tab" data-tab="price">Tabela Price</button>';
@@ -294,8 +336,10 @@
         html += '<div class="income-alert alert-attention"><div class="alert-header"><span class="alert-label">Informe sua renda mensal</span></div><p class="alert-message">Preencha o campo "Sua renda mensal" no formulário para descobrir se a parcela compromete muito seu orçamento. Acima de 30% da renda, alertamos sobre o risco.</p></div>';
       }
 
+      var prazoSingle = sistema === 'price' ? data.mesesPrice : data.mesesSAC;
       html += '<div class="summary-cards">';
       html += card('Valor Financiado', fmtCurrency(data.principal), '', 'Valor que o banco empresta para você (valor do bem menos a entrada)');
+      html += card('Prazo', prazoSingle + ' meses', '', 'Número de meses para quitar o financiamento');
       html += card('Custo Total', fmtCurrency(data.entrada + result.totalPaid), '', 'Tudo que você vai pagar: entrada + todas as parcelas');
       html += card('Total de Juros', fmtCurrency(result.totalInterest), 'highlight-danger', 'Quanto você paga a mais além do valor financiado');
       html += card('1ª Parcela', fmtCurrency(result.installments[0].payment), '', 'Valor da primeira prestação mensal');
@@ -311,7 +355,7 @@
 
       html += '<div class="amortization-section">';
       html += '<details class="amortization-details">';
-      html += '<summary>Tabela de Amortiza\u00E7\u00E3o — clique para expandir</summary>';
+      html += '<summary><span>Tabela de Amortiza\u00E7\u00E3o</span></summary>';
       html += '<div class="table-scroll">' + generateTable(result.installments) + '</div>';
       html += '</details>';
       html += '</div>';
@@ -397,7 +441,7 @@
       var principal = valorVista - entrada;
       var monthlyRate = periodo === 'annual' ? taxa / 12 : taxa;
 
-      var meses;
+      var mesesPrice, mesesSAC;
       var parcelaMode = btnParcela.classList.contains('active');
       var calcMode = parcelaMode ? 'parcela' : 'prazo';
 
@@ -431,27 +475,17 @@
           }
         }
 
-        if (sistema === 'comparar') {
-          meses = Math.ceil(Math.max(nPrice, nSAC));
-        } else if (sistema === 'price') {
-          meses = Math.ceil(nPrice);
-        } else {
-          meses = Math.ceil(nSAC);
-        }
+        mesesPrice = Math.ceil(nPrice);
+        mesesSAC = Math.ceil(nSAC);
 
-        if (meses > 420) { showError('O prazo necessário ultrapassa 35 anos (420 meses). Aumente a parcela ou a entrada.'); return; }
+        if (mesesPrice > 420 || mesesSAC > 420) { showError('O prazo necessário ultrapassa 35 anos (420 meses). Aumente a parcela ou a entrada.'); return; }
       } else {
         var prazoVal = parseInt(prazoInput.value, 10);
         if (prazoVal < 1 || isNaN(prazoVal)) {
           showError('Informe o prazo em meses.');
           return;
         }
-        meses = prazoVal;
-      }
-
-      if (meses < 1) {
-        showError('O prazo deve ser pelo menos 1 mês.');
-        return;
+        mesesPrice = mesesSAC = prazoVal;
       }
 
       var resultPrice = null;
@@ -460,21 +494,21 @@
       var cetSAC = null;
 
       if (sistema === 'price' || sistema === 'comparar') {
-        resultPrice = calcPrice(principal, monthlyRate, meses);
+        resultPrice = calcPrice(principal, monthlyRate, mesesPrice);
         var paymentsPrice = [];
         for (var k = 0; k < resultPrice.installments.length; k++) {
           paymentsPrice.push(resultPrice.installments[k].payment);
         }
-        cetPrice = calcCET(principal, meses, paymentsPrice, seguroMIP, seguroDFI, taxaAdm, taxaAbertura);
+        cetPrice = calcCET(principal, mesesPrice, paymentsPrice, seguroMIP, seguroDFI, taxaAdm, taxaAbertura);
       }
 
       if (sistema === 'sac' || sistema === 'comparar') {
-        resultSAC = calcSAC(principal, monthlyRate, meses);
+        resultSAC = calcSAC(principal, monthlyRate, mesesSAC);
         var paymentsSAC = [];
         for (var k = 0; k < resultSAC.installments.length; k++) {
           paymentsSAC.push(resultSAC.installments[k].payment);
         }
-        cetSAC = calcCET(principal, meses, paymentsSAC, seguroMIP, seguroDFI, taxaAdm, taxaAbertura);
+        cetSAC = calcCET(principal, mesesSAC, paymentsSAC, seguroMIP, seguroDFI, taxaAdm, taxaAbertura);
       }
 
       renderResults({
@@ -482,7 +516,9 @@
         valorVista: valorVista,
         entrada: entrada,
         principal: principal,
-        meses: meses,
+        calcMode: calcMode,
+        mesesPrice: mesesPrice,
+        mesesSAC: mesesSAC,
         monthlyRate: monthlyRate,
         sistema: sistema,
         resultPrice: resultPrice,
