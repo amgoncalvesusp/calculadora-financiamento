@@ -347,24 +347,26 @@
     var btnPrazo = document.getElementById('btn-prazo');
     var btnParcela = document.getElementById('btn-parcela');
 
+    parcelaInput.disabled = true;
+
     function setCalcMode(mode) {
       if (mode === 'prazo') {
         btnPrazo.classList.add('active');
         btnParcela.classList.remove('active');
-        prazoInput.disabled = false;
-        parcelaInput.disabled = true;
+        prazoInput.removeAttribute('disabled');
+        parcelaInput.setAttribute('disabled', 'disabled');
         parcelaInput.value = '';
       } else {
         btnParcela.classList.add('active');
         btnPrazo.classList.remove('active');
-        parcelaInput.disabled = false;
-        prazoInput.disabled = true;
+        parcelaInput.removeAttribute('disabled');
+        prazoInput.setAttribute('disabled', 'disabled');
         prazoInput.value = '';
       }
     }
 
-    btnPrazo.addEventListener('click', function () { setCalcMode('prazo'); });
-    btnParcela.addEventListener('click', function () { setCalcMode('parcela'); });
+    btnPrazo.addEventListener('click', function (e) { e.preventDefault(); setCalcMode('prazo'); });
+    btnParcela.addEventListener('click', function (e) { e.preventDefault(); setCalcMode('parcela'); });
 
     var form = document.getElementById('calc-form');
 
@@ -397,10 +399,13 @@
 
       var meses;
       var calcMode;
-      var prazoVal = getVal('prazo');
-      var parcelaVal = getVal('parcela-desejada');
+      var prazoVal = parseInt(prazoInput.value, 10);
+      var parcelaVal = parseFloat(parcelaInput.value) || 0;
 
-      if (parcelaVal > 0) {
+      if (!prazoInput.hasAttribute('disabled') && prazoVal > 0) {
+        calcMode = 'prazo';
+        meses = prazoVal;
+      } else if (!parcelaInput.hasAttribute('disabled') && parcelaVal > 0) {
         calcMode = 'parcela';
         var nPrice = calcPriceN(principal, monthlyRate, parcelaVal);
         var nSAC = calcSACN(principal, monthlyRate, parcelaVal);
