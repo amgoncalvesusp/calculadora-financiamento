@@ -398,15 +398,11 @@
       var monthlyRate = periodo === 'annual' ? taxa / 12 : taxa;
 
       var meses;
-      var calcMode;
-      var prazoVal = parseInt(prazoInput.value, 10);
-      var parcelaVal = parseFloat(parcelaInput.value) || 0;
+      var calcMode = btnParcela.classList.contains('active') ? 'parcela' : 'prazo';
 
-      if (!prazoInput.hasAttribute('disabled') && prazoVal > 0) {
-        calcMode = 'prazo';
-        meses = prazoVal;
-      } else if (!parcelaInput.hasAttribute('disabled') && parcelaVal > 0) {
-        calcMode = 'parcela';
+      if (calcMode === 'parcela') {
+        var parcelaVal = parseFloat(parcelaInput.value) || 0;
+        if (parcelaVal <= 0) { showError('Informe o valor da parcela que você pode pagar.'); return; }
         var nPrice = calcPriceN(principal, monthlyRate, parcelaVal);
         var nSAC = calcSACN(principal, monthlyRate, parcelaVal);
 
@@ -432,12 +428,10 @@
         }
 
         if (meses > 420) { showError('O prazo necessário ultrapassa 35 anos (420 meses). Aumente a parcela ou a entrada.'); return; }
-      } else if (prazoVal > 0) {
-        calcMode = 'prazo';
-        meses = prazoVal;
       } else {
-        showError('Informe o prazo (meses) OU a parcela que pode pagar.');
-        return;
+        var prazoVal = parseInt(prazoInput.value, 10);
+        if (prazoVal < 1 || isNaN(prazoVal)) { showError('Informe o prazo (meses).'); return; }
+        meses = prazoVal;
       }
 
       var resultPrice = null;
