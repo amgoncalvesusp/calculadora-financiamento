@@ -1,6 +1,87 @@
 (function () {
   'use strict';
 
+  // Taxas médias de mercado (% ao mês) — referência Brasil 2026
+  // Fontes: BCB (séries de taxas por instituição), Caixa (SBPE/MCMV),
+  // agregadores de taxas (idinheiro, Creditas, calculafinanciamento).
+  var MARKET_RATES = {
+    imovel: { min: 0.80, avg: 0.95, max: 1.15, label: 'imóvel (SBPE)' },
+    carro:  { min: 1.20, avg: 1.93, max: 2.80, label: 'carro (CDC)' },
+    moto:   { min: 1.50, avg: 2.40, max: 3.50, label: 'moto (CDC)' },
+    outro:  { min: 1.80, avg: 3.50, max: 6.00, label: 'crédito pessoal' }
+  };
+
+  // Dado P, n e pmt, acha a taxa mensal i que satisfaz a fórmula PMT do Price.
+  // Usa bisseção (garantida a convergir, função monótona em i > 0).
+  function calcImpliedRate(P, n, pmt) {
+    if (!isFinite(P) || !isFinite(n) || !isFinite(pmt)) return -1;
+    if (P <= 0 || n < 1 || pmt <= 0) return -1;
+    if (pmt * n <= P) return -1; // soma das parcelas <= principal: impossível com juros ≥ 0
+    if (Math.abs(pmt - P / n) < 1e-9) return 0; // sem juros
+
+    var lo = 0;
+    var hi = 2; // 200% ao mês — teto seguro; nenhum financiamento real passa disso
+    var eps = 1e-10;
+
+    for (var iter = 0; iter < 200; iter++) {
+      var mid = (lo + hi) / 2;
+      if (mid === 0) { lo = eps; continue; }
+      var factor = Math.pow(1 + mid, n);
+      var pmtCalc = P * mid * factor / (factor - 1);
+
+      if (!isFinite(pmtCalc)) { hi = mid; continue; }
+      if (Math.abs(pmtCalc - pmt) < eps) return mid;
+      if (pmtCalc > pmt) hi = mid;
+      else lo = mid;
+      if (hi - lo < 1e-12) break;
+    }
+    return (lo + hi) / 2;
+  }
+
+  function analyzeRate(monthlyRate, tipoBem) {
+    var ref = MARKET_RATES[tipoBem] || MARKET_RATES.outro;
+    var ratePct = monthlyRate * 100;
+    var level, label, icon, message, advice;
+
+    if (ratePct < ref.min) {
+      level = 'excellent';
+      icon = '\u2713 \u00d3TIMA';
+      label = 'Taxa excelente — abaixo da média de mercado';
+      message = 'A taxa proposta está <strong>abaixo da faixa típica</strong> para financiamento de ' + ref.label + '. Se não há pegadinhas em seguros, CET ou outras cobranças, é uma boa oferta.';
+      advice = 'Verifique o CET (Custo Efetivo Total) no contrato para confirmar que não há taxas escondidas que anulem o benefício.';
+    } else if (ratePct <= ref.avg) {
+      level = 'good';
+      icon = '\u2713 NA M\u00c9DIA';
+      label = 'Taxa dentro da média de mercado';
+      message = 'A taxa está <strong>alinhada com a média</strong> praticada para ' + ref.label + '. É uma proposta razoável, mas ainda vale comparar com outros bancos.';
+      advice = 'Peça simulações em pelo menos 3 bancos antes de fechar. Uma diferença de 0,2% ao mês pode representar milhares de reais no total.';
+    } else if (ratePct <= ref.max) {
+      level = 'high';
+      icon = '\u26a0 ALTA';
+      label = 'ATENÇÃO: taxa acima da média';
+      message = 'A taxa proposta está <strong>acima da média</strong> para ' + ref.label + '. Você provavelmente encontra condições melhores em outras instituições.';
+      advice = 'Antes de assinar, peça propostas em bancos grandes (Caixa, BB, Itaú, Bradesco, Santander) e em plataformas digitais. Use esta calculadora para comparar o custo total.';
+    } else {
+      level = 'abusive';
+      icon = '\u2718 ABUSIVA';
+      label = 'TAXA ABUSIVA — NÃO ACEITE';
+      message = 'A taxa proposta é <strong>muito acima</strong> do praticado no mercado para ' + ref.label + '. Isso caracteriza uma oferta predatória — você pagaria muito mais que o necessário.';
+      advice = 'NÃO assine este contrato. Procure bancos tradicionais, cooperativas de crédito ou plataformas como Creditas, Nubank, PicPay. Se já assinou, é possível contestar a taxa na Justiça alegando juros abusivos.';
+    }
+
+    return {
+      rate: monthlyRate,
+      ratePct: ratePct,
+      annualPct: (Math.pow(1 + monthlyRate, 12) - 1) * 100,
+      level: level,
+      icon: icon,
+      label: label,
+      message: message,
+      advice: advice,
+      reference: ref
+    };
+  }
+
   function calcPrice(P, i, n) {
     var installments = [];
     var balance = P;
@@ -249,11 +330,71 @@
       '</div>';
   }
 
+  function rateVerdict(analysis) {
+    if (!analysis) return '';
+    var cls = 'rate-verdict rate-' + analysis.level;
+    var ref = analysis.reference;
+    var ratePct = analysis.ratePct;
+
+    // Posição na barra de referência: 0% = min, 100% = max; clampa fora
+    var barPct = (ratePct - ref.min) / (ref.max - ref.min) * 100;
+    if (barPct < 0) barPct = 0;
+    if (barPct > 100) barPct = 100;
+
+    var annualFmt = analysis.annualPct.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var monthlyFmt = ratePct.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
+    var minFmt = ref.min.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var avgFmt = ref.avg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var maxFmt = ref.max.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    var outsideBar = ratePct > ref.max
+      ? '<span class="rate-bar-over">Sua taxa está ' + ((ratePct / ref.max - 1) * 100).toFixed(0) + '% acima do teto de mercado</span>'
+      : (ratePct < ref.min
+        ? '<span class="rate-bar-under">Sua taxa está ' + ((1 - ratePct / ref.min) * 100).toFixed(0) + '% abaixo do piso de mercado</span>'
+        : '');
+
+    return '<div class="' + cls + '">' +
+      '<div class="rate-verdict-header">' +
+      '<span class="rate-verdict-icon">' + analysis.icon + '</span>' +
+      '<div class="rate-verdict-labels">' +
+      '<span class="rate-verdict-label">' + analysis.label + '</span>' +
+      '<span class="rate-verdict-sub">Taxa descoberta na proposta</span>' +
+      '</div>' +
+      '<div class="rate-verdict-numbers">' +
+      '<span class="rate-verdict-monthly">' + monthlyFmt + '% <small>a.m.</small></span>' +
+      '<span class="rate-verdict-annual">' + annualFmt + '% <small>a.a.</small></span>' +
+      '</div>' +
+      '</div>' +
+      '<p class="rate-verdict-message">' + analysis.message + '</p>' +
+      '<div class="rate-bar-wrap">' +
+      '<div class="rate-bar-title">Faixa de mercado para ' + ref.label + ' (% ao mês)</div>' +
+      '<div class="rate-bar">' +
+      '<span class="rate-bar-segment seg-low"></span>' +
+      '<span class="rate-bar-segment seg-mid"></span>' +
+      '<span class="rate-bar-segment seg-high"></span>' +
+      '<span class="rate-bar-marker" style="left:' + barPct + '%"></span>' +
+      '</div>' +
+      '<div class="rate-bar-scale">' +
+      '<span>' + minFmt + '% <small>mínimo</small></span>' +
+      '<span>' + avgFmt + '% <small>média</small></span>' +
+      '<span>' + maxFmt + '% <small>máximo</small></span>' +
+      '</div>' +
+      outsideBar +
+      '</div>' +
+      '<div class="rate-verdict-advice"><strong>O que fazer:</strong> ' + analysis.advice + '</div>' +
+      '</div>';
+  }
+
   function renderResults(data) {
     var html = '';
     var sistema = data.sistema;
     var isComp = sistema === 'comparar';
     var renda = data.renda;
+
+    // Veredito da taxa descoberta (só aparece no modo "taxa")
+    if (data.rateAnalysis) {
+      html += rateVerdict(data.rateAnalysis);
+    }
 
     if (isComp) {
       var rSAC = data.resultSAC;
@@ -388,29 +529,62 @@
   document.addEventListener('DOMContentLoaded', function () {
     var prazoInput = document.getElementById('prazo');
     var parcelaInput = document.getElementById('parcela-desejada');
+    var taxaInput = document.getElementById('taxa-juros');
     var btnPrazo = document.getElementById('btn-prazo');
     var btnParcela = document.getElementById('btn-parcela');
+    var btnTaxa = document.getElementById('btn-taxa');
+    var parcelaLabel = document.getElementById('parcela-label');
+    var parcelaHint = document.getElementById('parcela-hint');
+    var prazoHint = document.getElementById('prazo-hint');
+    var modeHint = document.getElementById('mode-hint');
 
     parcelaInput.disabled = true;
 
+    var MODE_HINTS = {
+      prazo: 'Você informa o prazo que quer pagar, a calculadora mostra o valor das parcelas, total de juros e comprometimento de renda.',
+      parcela: 'Você informa o valor da parcela que cabe no seu bolso, a calculadora mostra em quantos meses vai pagar e o total de juros.',
+      taxa: 'O vendedor não te disse a taxa de juros? Informe a parcela proposta e o prazo, a calculadora descobre a taxa real e diz se é justa em relação ao mercado.'
+    };
+
     function setCalcMode(mode) {
+      [btnPrazo, btnParcela, btnTaxa].forEach(function (b) { b.classList.remove('active'); });
+
       if (mode === 'prazo') {
         btnPrazo.classList.add('active');
-        btnParcela.classList.remove('active');
         prazoInput.removeAttribute('disabled');
         parcelaInput.setAttribute('disabled', 'disabled');
         parcelaInput.value = '';
-      } else {
+        taxaInput.removeAttribute('disabled');
+        parcelaLabel.textContent = 'Parcela que você pode pagar (R$)';
+        parcelaHint.textContent = 'Informe o valor mensal que cabe no seu bolso e descubra o prazo necessário e quanto de juros vai pagar';
+        prazoHint.textContent = 'Em quantos meses você vai pagar. Ex: 48 meses = 4 anos';
+      } else if (mode === 'parcela') {
         btnParcela.classList.add('active');
-        btnPrazo.classList.remove('active');
         parcelaInput.removeAttribute('disabled');
         prazoInput.setAttribute('disabled', 'disabled');
         prazoInput.value = '';
+        taxaInput.removeAttribute('disabled');
+        parcelaLabel.textContent = 'Parcela que você pode pagar (R$)';
+        parcelaHint.textContent = 'Informe o valor mensal que cabe no seu bolso e descubra o prazo necessário e quanto de juros vai pagar';
+        prazoHint.textContent = 'Em quantos meses você vai pagar. Ex: 48 meses = 4 anos';
+      } else {
+        // mode === 'taxa' — descobrir a taxa a partir de parcela + prazo
+        btnTaxa.classList.add('active');
+        parcelaInput.removeAttribute('disabled');
+        prazoInput.removeAttribute('disabled');
+        taxaInput.setAttribute('disabled', 'disabled');
+        taxaInput.value = '';
+        parcelaLabel.textContent = 'Parcela proposta pelo vendedor (R$)';
+        parcelaHint.textContent = 'Valor exato da parcela que o vendedor/banco está oferecendo. A calculadora vai descobrir a taxa real embutida nessa proposta.';
+        prazoHint.textContent = 'Prazo proposto pelo vendedor em meses. Ex: 60 meses = 5 anos';
       }
+
+      if (modeHint) modeHint.textContent = MODE_HINTS[mode];
     }
 
     btnPrazo.addEventListener('click', function (e) { e.preventDefault(); setCalcMode('prazo'); });
     btnParcela.addEventListener('click', function (e) { e.preventDefault(); setCalcMode('parcela'); });
+    btnTaxa.addEventListener('click', function (e) { e.preventDefault(); setCalcMode('taxa'); });
 
     var form = document.getElementById('calc-form');
 
@@ -442,10 +616,35 @@
       var monthlyRate = periodo === 'annual' ? taxa / 12 : taxa;
 
       var mesesPrice, mesesSAC;
-      var parcelaMode = btnParcela.classList.contains('active');
-      var calcMode = parcelaMode ? 'parcela' : 'prazo';
+      var calcMode = btnTaxa.classList.contains('active') ? 'taxa'
+        : btnParcela.classList.contains('active') ? 'parcela'
+        : 'prazo';
+      var rateAnalysis = null;
 
-      if (calcMode === 'parcela') {
+      if (calcMode === 'taxa') {
+        // Descobre a taxa a partir de prazo + parcela proposta
+        var prazoValT = parseInt(prazoInput.value, 10);
+        var parcelaValT = parseFloat(parcelaInput.value) || 0;
+
+        if (principal <= 0) { showError('O valor da entrada não pode ser igual ou maior que o valor do bem.'); return; }
+        if (isNaN(prazoValT) || prazoValT < 1) { showError('Informe o prazo proposto em meses.'); return; }
+        if (prazoValT > 420) { showError('Prazo máximo suportado: 420 meses (35 anos).'); return; }
+        if (parcelaValT <= 0) { showError('Informe o valor da parcela proposta pelo vendedor.'); return; }
+        if (parcelaValT * prazoValT < principal) {
+          showError('A soma das parcelas (' + fmtCurrency(parcelaValT * prazoValT) + ') é menor que o valor financiado (' + fmtCurrency(principal) + '). Verifique se os valores estão corretos.');
+          return;
+        }
+
+        var impliedRate = calcImpliedRate(principal, prazoValT, parcelaValT);
+        if (impliedRate < 0 || !isFinite(impliedRate)) {
+          showError('Não foi possível calcular a taxa com os valores informados. Verifique entrada, parcela e prazo.');
+          return;
+        }
+
+        monthlyRate = impliedRate;
+        rateAnalysis = analyzeRate(impliedRate, tipoBem);
+        mesesPrice = mesesSAC = prazoValT;
+      } else if (calcMode === 'parcela') {
         var parcelaVal = parseFloat(parcelaInput.value) || 0;
         if (parcelaVal <= 0) {
           showError('Informe o valor da parcela que você pode pagar.');
@@ -525,7 +724,8 @@
         resultSAC: resultSAC,
         cetPrice: cetPrice,
         cetSAC: cetSAC,
-        renda: renda
+        renda: renda,
+        rateAnalysis: rateAnalysis
       });
     });
 

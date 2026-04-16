@@ -6,13 +6,13 @@
   <title>Calculadora de Financiamento Grátis — Simule Parcelas, SAC, Price, CET e Comprometimento de Renda</title>
   <meta name="description" content="Calculadora de financiamento grátis com SAC, Price e CET. Simule parcelas de carro, moto e imóvel, descubra o prazo pelo valor da parcela, veja o comprometimento de renda e quanto vai pagar de juros.">
   <meta name="keywords" content="calculadora financiamento, simulador financiamento, financiamento carro, financiamento moto, financiamento imóvel, SAC, Price, tabela price, CET, custo efetivo total, parcelas financiamento, juros financiamento, calculadora financiamento habitacional, simulador financiamento veículo, comprometimento de renda, parcela cabe no bolso, calcular prazo pela parcela">
-  <link rel="canonical" href="https://calculadoradefinanciamento.netlify.app">
+  <link rel="canonical" href="https://app-financiamento-eta.vercel.app">
   <meta name="google-adsense-account" content="ca-pub-4988165679806481">
   <meta property="og:title" content="Calculadora de Financiamento Grátis — Simule Parcelas e Comprometimento de Renda">
   <meta property="og:description" content="Simule financiamento de carro, moto e imóvel com SAC, Price e CET. Descubra o prazo pela parcela, veja o comprometimento de renda e quanto vai pagar de juros.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="pt_BR">
-  <meta property="og:url" content="https://calculadoradefinanciamento.netlify.app">
+  <meta property="og:url" content="https://app-financiamento-eta.vercel.app">
   <meta property="og:site_name" content="Calculadora de Financiamento">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Calculadora de Financiamento Grátis — Simule Parcelas e Comprometimento de Renda">
@@ -22,7 +22,7 @@
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "Calculadora de Financiamento",
-    "url": "https://calculadoradefinanciamento.netlify.app",
+    "url": "https://app-financiamento-eta.vercel.app",
     "description": "Simulador de financiamento brasileiro com SAC, Price e CET para veículos e imóveis",
     "applicationCategory": "FinanceApplication",
     "operatingSystem": "Web Browser",
@@ -130,7 +130,7 @@
         "@type": "ListItem",
         "position": 1,
         "name": "Calculadora de Financiamento",
-        "item": "https://calculadoradefinanciamento.netlify.app"
+        "item": "https://app-financiamento-eta.vercel.app"
       }
     ]
   }
@@ -224,18 +224,20 @@
                 <div class="mode-buttons">
                   <button type="button" class="mode-btn active" id="btn-prazo">1️⃣ Informar prazo → ver parcelas</button>
                   <button type="button" class="mode-btn" id="btn-parcela">2️⃣ Informar parcela → ver prazo</button>
+                  <button type="button" class="mode-btn" id="btn-taxa">3️⃣ Descobrir a taxa → a proposta é justa?</button>
                 </div>
+                <span class="hint mode-hint" id="mode-hint">Você informa o prazo que quer pagar, a calculadora mostra o valor das parcelas, total de juros e comprometimento de renda.</span>
               </div>
 
               <div class="form-group" id="group-prazo">
                 <label for="prazo">Prazo (meses)</label>
-                <span class="hint">Em quantos meses você vai pagar. Ex: 48 meses = 4 anos</span>
+                <span class="hint" id="prazo-hint">Em quantos meses você vai pagar. Ex: 48 meses = 4 anos</span>
                 <input type="number" id="prazo" min="1" max="420" placeholder="Ex: 48">
               </div>
 
               <div class="form-group" id="group-parcela">
-                <label for="parcela-desejada">Parcela que você pode pagar (R$)</label>
-                <span class="hint">Informe o valor mensal que cabe no seu bolso e descubra o prazo necessário e quanto de juros vai pagar</span>
+                <label for="parcela-desejada" id="parcela-label">Parcela que você pode pagar (R$)</label>
+                <span class="hint" id="parcela-hint">Informe o valor mensal que cabe no seu bolso e descubra o prazo necessário e quanto de juros vai pagar</span>
                 <input type="number" id="parcela-desejada" min="0" step="0.01" placeholder="Ex: 2000">
               </div>
 
