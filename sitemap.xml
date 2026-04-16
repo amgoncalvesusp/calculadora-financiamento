@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://calculadoradefinanciamento.netlify.app/</loc>
+    <loc>https://app-financiamento-eta.vercel.app/</loc>
     <priority>1.0</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://calculadoradefinanciamento.netlify.app/privacidade.html</loc>
+    <loc>https://app-financiamento-eta.vercel.app/privacidade.html</loc>
     <priority>0.3</priority>
     <changefreq>yearly</changefreq>
   </url>
